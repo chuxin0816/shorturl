@@ -95,7 +95,7 @@ func (l *ConvertLogic) Convert(req *types.ConvertRequest) (resp *types.ConvertRe
 
 		// 生成短链接
 		shortURL = base62.Encode(seqID)
-		if _, ok := blockListMap[shortURL]; ok {
+		if _, ok := blockListMap[shortURL]; !ok {
 			break
 		}
 	}
