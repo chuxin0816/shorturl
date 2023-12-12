@@ -5,9 +5,15 @@ import (
 	"errors"
 )
 
-const base62Code = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	base62Code   = "n1F6U5r48dgAEOWeCwTbjhSI3aBzHscmiRGQ0luX9pvJy2kDKfoMNPq7YxVLtZ"
+	base62System = 62
+)
 
-var errInvalidChar = errors.New("invalid base62 char")
+var (
+	errInvalidChar = errors.New("invalid base62 char")
+	base62Map      = initBase62Map()
+)
 
 func Encode(num uint64) string {
 	if num == 0 {
@@ -16,7 +22,7 @@ func Encode(num uint64) string {
 	var buf bytes.Buffer
 	for num > 0 {
 		buf.WriteByte(base62Code[num%62])
-		num /= 62
+		num /= base62System
 	}
 
 	// reverse buf
@@ -40,15 +46,17 @@ func Decode(str string) (uint64, error) {
 	return res, nil
 }
 
-func base62Index(r rune) (uint64, error) {
-	switch {
-	case '0' <= r && r <= '9':
-		return uint64(r - '0'), nil
-	case 'a' <= r && r <= 'z':
-		return uint64(r - 'a' + 10), nil
-	case 'A' <= r && r <= 'Z':
-		return uint64(r - 'A' + 36), nil
-	default:
-		return 0, errInvalidChar
+func initBase62Map() map[rune]uint64 {
+	m := make(map[rune]uint64)
+	for i, c := range base62Code {
+		m[c] = uint64(i)
 	}
+	return m
+}
+
+func base62Index(r rune) (uint64, error) {
+	if v, ok := base62Map[r]; ok {
+		return v, nil
+	}
+	return 0, errInvalidChar
 }
