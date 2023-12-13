@@ -3,10 +3,11 @@ package handler
 import (
 	"net/http"
 
-	"github.com/zeromicro/go-zero/rest/httpx"
 	"shorturl/internal/logic"
 	"shorturl/internal/svc"
 	"shorturl/internal/types"
+
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func showHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -20,9 +21,9 @@ func showHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		l := logic.NewShowLogic(r.Context(), svcCtx)
 		resp, err := l.Show(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			http.NotFound(w, r)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			http.Redirect(w, r, resp.LongURL, http.StatusFound)
 		}
 	}
 }
