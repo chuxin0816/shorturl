@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -14,14 +15,16 @@ const (
 )
 
 var (
-	db  *gorm.DB
-	rdb *redis.Client
+	db          *gorm.DB
+	RDB         *redis.Client
+	SFGroup *singleflight.Group
 )
 
 func init() {
 	connectDB(dsn)
 	connectRedis(redisAddr)
 	SetDefault(db)
+	SFGroup = &singleflight.Group{}
 }
 
 func connectDB(dsn string) {
@@ -33,7 +36,7 @@ func connectDB(dsn string) {
 }
 
 func connectRedis(addr string) {
-	rdb = redis.NewClient(&redis.Options{
+	RDB = redis.NewClient(&redis.Options{
 		Addr: addr,
 		DB:   0,
 	})

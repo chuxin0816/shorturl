@@ -7,6 +7,7 @@ require (
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/zeromicro/go-zero v1.6.0
+	golang.org/x/sync v0.3.0
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gen v0.3.24
 	gorm.io/gorm v1.25.5
