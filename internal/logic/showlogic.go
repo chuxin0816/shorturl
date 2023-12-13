@@ -2,7 +2,9 @@ package logic
 
 import (
 	"context"
+	"errors"
 
+	"shorturl/dal/query"
 	"shorturl/internal/svc"
 	"shorturl/internal/types"
 
@@ -15,6 +17,10 @@ type ShowLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
+var (
+	ErrShortUrlNotExist = errors.New("short url not exist")
+)
+
 func NewShowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ShowLogic {
 	return &ShowLogic{
 		Logger: logx.WithContext(ctx),
@@ -24,7 +30,16 @@ func NewShowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ShowLogic {
 }
 
 func (l *ShowLogic) Show(req *types.ShowRequest) (resp *types.ShowResponse, err error) {
-	// todo: add your logic here and delete this line
+	su := query.ShortURLMap
+	// 查询短链接是否存在
+	suMap, err := su.WithContext(l.ctx).Where(su.Surl.Eq(req.ShortURL)).First()
+	if err != nil {
+		logx.Errorf("su.WithContext(l.ctx).Where(su.Surl.Eq(req.ShortURL)).First() error: %v", err)
+		return nil, err
+	}
+	if suMap.ID == 0 {
+		return nil, ErrShortUrlNotExist
+	}
 
-	return
+	return &types.ShowResponse{LongURL: suMap.Lurl}, nil
 }

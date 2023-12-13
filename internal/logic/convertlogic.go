@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"shorturl/dal"
 	"shorturl/dal/model"
 	"shorturl/dal/query"
 	"shorturl/internal/svc"
@@ -20,7 +19,6 @@ import (
 
 const (
 	domainPrefix = "chuxin0816.com/"
-	dsn          = "root:123456@tcp(127.0.0.1:3306)/shorturl?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
 )
 
 var (
@@ -35,7 +33,6 @@ type ConvertLogic struct {
 }
 
 func init() {
-	dal.DB = dal.ConnectDB(dsn)
 	blockListMap = make(map[string]struct{}, len(blockList))
 	for _, v := range blockList {
 		blockListMap[v] = struct{}{}
@@ -51,7 +48,7 @@ func NewConvertLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ConvertLo
 }
 
 func (l *ConvertLogic) Convert(req *types.ConvertRequest) (resp *types.ConvertResponse, err error) {
-	query.SetDefault(dal.DB)
+
 	su := query.ShortURLMap
 
 	// 判断链接是否已经转过
