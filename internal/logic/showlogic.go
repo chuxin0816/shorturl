@@ -9,7 +9,6 @@ import (
 	"shorturl/internal/svc"
 	"shorturl/internal/types"
 	"shorturl/pkg/randtime"
-	"shorturl/pkg/singleflight"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -38,17 +37,18 @@ func (l *ShowLogic) Show(req *types.ShowRequest) (resp *types.ShowResponse, err 
 	su := query.ShortURLMap
 	// 使用singleflight减轻缓存压力，并解决缓存击穿问题
 	key := query.GetPrefix(req.ShortURL)
-	lURL, err, _ := singleflight.G.Do(key, func() (interface{}, error) {
+	lURL, err, _ := l.svcCtx.G.Do(key, func() (interface{}, error) {
 		go func() {
 			time.Sleep(delayTime)
-			singleflight.G.Forget(key)
+			l.svcCtx.G.Forget(key)
 		}()
 		// 查询缓存
-		lURL, err := query.RDB.Get(l.ctx, key).Result()
+		lURL, err := l.svcCtx.RDB.Get(l.ctx, key).Result()
 		if err == nil {
 			return lURL, nil
 		}
 		if err != nil && err != redis.Nil {
+			logx.Errorf("l.svcCtx.RDB.Get(context.Background(), key).Result() error: %v", err)
 			return nil, err
 		}
 
@@ -63,7 +63,7 @@ func (l *ShowLogic) Show(req *types.ShowRequest) (resp *types.ShowResponse, err 
 		}
 		// 写入缓存
 		go func() {
-			if err := query.RDB.Set(l.ctx, key, suMap.Lurl, randtime.GetRandTime()).Err(); err != nil {
+			if err := l.svcCtx.RDB.Set(l.ctx, key, suMap.Lurl, randtime.GetRandTime()).Err(); err != nil {
 				logx.Errorf("query.RDB.Set(l.ctx, key, suMap.Lurl, randtime.GetRandTime()).Err() error: %v", err)
 			}
 		}()
