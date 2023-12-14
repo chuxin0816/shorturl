@@ -39,14 +39,7 @@ func init() {
 	rdb = connectRedis(redisAddr)
 	query.SetDefault(db)
 	bloomFilter = bloom.NewWithEstimates(100000, 0.01)
-	// 初始化布隆过滤器
-	su, err := query.ShortURLMap.WithContext(context.Background()).Find()
-	if err != nil {
-		panic(fmt.Errorf("query.ShortURLMap.WithContext(context.Background()).Find() error: %v", err))
-	}
-	for _, v := range su {
-		bloomFilter.Add([]byte(v.Surl))
-	}
+	loadDataToBloom()
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -72,4 +65,14 @@ func connectRedis(addr string) *redis.Client {
 		DB:   0,
 	})
 	return rdb
+}
+
+func loadDataToBloom() {
+	su, err := query.ShortURLMap.WithContext(context.Background()).Where(query.ShortURLMap.IsDel.Eq(0)).Select(query.ShortURLMap.Surl).Find()
+	if err != nil {
+		panic(fmt.Errorf("query.ShortURLMap.WithContext(context.Background()).Find() error: %v", err))
+	}
+	for _, v := range su {
+		bloomFilter.Add([]byte(v.Surl))
+	}
 }

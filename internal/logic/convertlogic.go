@@ -53,7 +53,7 @@ func (l *ConvertLogic) Convert(req *types.ConvertRequest) (resp *types.ConvertRe
 
 	// 判断链接是否已经转过
 	md5Value := md5.Sum([]byte(req.LongURL))
-	url, err := su.WithContext(l.ctx).Where(su.Md5.Eq(md5Value)).First()
+	url, err := su.WithContext(l.ctx).Where(su.Md5.Eq(md5Value), su.IsDel.Eq(0)).Select(su.Surl).First()
 	if err != gorm.ErrRecordNotFound {
 		if err == nil {
 			return &types.ConvertResponse{ShortURL: url.Surl}, nil
@@ -68,7 +68,7 @@ func (l *ConvertLogic) Convert(req *types.ConvertRequest) (resp *types.ConvertRe
 		logx.Errorf("urltool.GetBaseURL error: %v", err)
 		return nil, err
 	}
-	if _, err = su.WithContext(l.ctx).Where(su.Surl.Eq(baseURL)).First(); err != gorm.ErrRecordNotFound {
+	if _, err = su.WithContext(l.ctx).Where(su.Surl.Eq(baseURL), su.IsDel.Eq(0)).Select(su.ID).First(); err != gorm.ErrRecordNotFound {
 		if err == nil {
 			return &types.ConvertResponse{ShortURL: baseURL}, nil
 		}

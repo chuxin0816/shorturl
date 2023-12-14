@@ -57,7 +57,7 @@ func (l *ShowLogic) Show(req *types.ShowRequest) (resp *types.ShowResponse, err 
 		}
 
 		// 查询短链接是否存在
-		suMap, err := su.WithContext(l.ctx).Where(su.Surl.Eq(req.ShortURL)).First()
+		suMap, err := su.WithContext(l.ctx).Where(su.Surl.Eq(req.ShortURL), su.IsDel.Eq(0)).Select(su.Lurl).First()
 		if err != nil {
 			logx.Errorf("su.WithContext(l.ctx).Where(su.Surl.Eq(req.ShortURL)).First() error: %v", err)
 			return nil, err
