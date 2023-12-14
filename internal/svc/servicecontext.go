@@ -68,11 +68,28 @@ func connectRedis(addr string) *redis.Client {
 }
 
 func loadDataToBloom() {
-	su, err := query.ShortURLMap.WithContext(context.Background()).Where(query.ShortURLMap.IsDel.Eq(0)).Select(query.ShortURLMap.Surl).Find()
+	cnt, err := query.ShortURLMap.WithContext(context.Background()).Count()
 	if err != nil {
-		panic(fmt.Errorf("query.ShortURLMap.WithContext(context.Background()).Find() error: %v", err))
+		panic(fmt.Errorf("query.ShortURLMap.WithContext(context.Background()).Count() error: %v", err))
 	}
-	for _, v := range su {
-		bloomFilter.Add([]byte(v.Surl))
+	
+	count := int(cnt)
+	pageTotal := 0
+	pageSize := 50
+	if count%pageSize == 0 {
+		pageTotal = count / pageSize
+	} else {
+		pageTotal = count/pageSize + 1
+	}
+
+	for page := 1; page <= pageTotal; page++ {
+		su, err := query.ShortURLMap.WithContext(context.Background()).Where(query.ShortURLMap.IsDel.Eq(0)).Offset((page - 1) * pageSize).Limit(int(pageSize)).Select(query.ShortURLMap.Surl).Find()
+		if err != nil {
+			panic(fmt.Errorf("query.ShortURLMap.WithContext(context.Background()).Find() error: %v", err))
+		}
+		
+		for _, v := range su {
+			bloomFilter.Add([]byte(v.Surl))
+		}
 	}
 }
