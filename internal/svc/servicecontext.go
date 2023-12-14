@@ -1,10 +1,12 @@
 package svc
 
 import (
+	"context"
 	"fmt"
 	"shorturl/dal/query"
 	"shorturl/internal/config"
 
+	"github.com/bits-and-blooms/bloom/v3"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/driver/mysql"
@@ -17,9 +19,10 @@ const (
 )
 
 var (
-	DB  *gorm.DB
-	RDB *redis.Client
-	G   *singleflight.Group
+	g           *singleflight.Group
+	db          *gorm.DB
+	rdb         *redis.Client
+	bloomFilter *bloom.BloomFilter
 )
 
 type ServiceContext struct {
@@ -27,21 +30,32 @@ type ServiceContext struct {
 	G      *singleflight.Group
 	DB     *gorm.DB
 	RDB    *redis.Client
+	Bloom  *bloom.BloomFilter
 }
 
 func init() {
-	DB = connectDB(dsn)
-	RDB = connectRedis(redisAddr)
-	query.SetDefault(DB)
-	G = &singleflight.Group{}
+	g = &singleflight.Group{}
+	db = connectDB(dsn)
+	rdb = connectRedis(redisAddr)
+	query.SetDefault(db)
+	bloomFilter = bloom.NewWithEstimates(100000, 0.01)
+	// 初始化布隆过滤器
+	su, err := query.ShortURLMap.WithContext(context.Background()).Find()
+	if err != nil {
+		panic(fmt.Errorf("query.ShortURLMap.WithContext(context.Background()).Find() error: %v", err))
+	}
+	for _, v := range su {
+		bloomFilter.Add([]byte(v.Surl))
+	}
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config: c,
-		G:      G,
-		DB:     DB,
-		RDB:    RDB,
+		G:      g,
+		DB:     db,
+		RDB:    rdb,
+		Bloom:  bloomFilter,
 	}
 }
 func connectDB(dsn string) *gorm.DB {

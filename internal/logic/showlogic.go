@@ -34,6 +34,10 @@ func NewShowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ShowLogic {
 }
 
 func (l *ShowLogic) Show(req *types.ShowRequest) (resp *types.ShowResponse, err error) {
+	// 使用布隆过滤器避免缓存穿透
+	if !l.svcCtx.Bloom.Test([]byte(req.ShortURL)) {
+		return nil, ErrShortUrlNotExist
+	}
 	su := query.ShortURLMap
 	// 使用singleflight减轻缓存压力，并解决缓存击穿问题
 	key := query.GetPrefix(req.ShortURL)
